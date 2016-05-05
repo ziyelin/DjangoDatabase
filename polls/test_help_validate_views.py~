@@ -1,0 +1,63 @@
+from django.test import TestCase
+
+from models import Quiz, Question, Attempt, AnswerAttempt, Answer
+from forms import UserForm
+from datetime import timedelta, datetime
+
+
+from views import validate_id_list, invalid_post, valid_quiz_id, same_question,hacker_detected, hacker_detected1, hacker_detected2, test_login, valid_quiz,test_attempt_finish, questiontoquiz,time_too_long,update_last_modified, is_answerset_empty, is_timestamp_updated,TIMETHRESHOLD
+
+from django.template import loader, RequestContext
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, get_list_or_404
+from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.models import User
+from django.contrib.auth import login, authenticate,logout
+from django.contrib.auth.forms import UserCreationForm
+from django.utils import timezone
+
+from polls.views import same_question,valid_quiz,questiontoquiz
+
+from test_models import QuizTestCase,AnswerTestCase
+from django.test.client import RequestFactory
+
+
+class ValidateTestCase(AnswerTestCase):
+    def setUp(self):
+        super(ValidateTestCase,self).setUp()
+        self.factory = RequestFactory()
+
+    def testSameQuestion(self):
+        bench_id = Answer.objects.get(text = "Garfield").id
+        
+        id_list_1 =[1,2,3,4]
+        id_list_2 = [1,2,3,5]
+        
+        boo1 = same_question(bench_id, id_list_1)
+        boo2 = same_question(bench_id, id_list_2)
+        self.assertEquals(boo1,True),"should come from the same question"
+        self.assertEquals(boo2,False),"not come from the same question"
+
+    def testValidQuiz(self):
+        request = self.factory.get('/login/')
+        myattempt=Attempt.objects.get(id=1)
+        myattempt.quiz = Quiz.objects.get(id=1)
+        boo1 = valid_quiz(1,1,request)
+        boo2 = valid_quiz(1,5,request)
+        self.assertEquals(boo1,True),"attempt is coherent with the question"
+        self.assertEquals(boo2,False),"the quiz of the attempt does not contain the question"
+
+    def testTimeTooLong(self):
+        myattempt = Attempt.objects.get(id=1)
+        myattempt.last_modified=timezone.now()-timedelta(hours=1)
+        myattempt.save()
+        boo1=time_too_long(1)
+        self.assertEquals(boo1, True)
+        myattempt.last_modified=timezone.now()-timedelta(minutes=1)
+        myattempt.save()
+        boo1=time_too_long(1)
+        self.assertEquals(boo1, False)
+        

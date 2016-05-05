@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+    <head>
+      <base href="http://zlin.master.cs.haverford.edu"/>
+      <title>create a Quiz</title>
+     <link href="/static/styling.css" rel="stylesheet", type="text/css" /> 
+    </head>
+    <body>
+      <h1>Create a Quiz</h1>
+      <form action="/quiz_create/" method="POST">
+	{% csrf_token %}
+	<ol>
+	  <li>Quiz Title:<input type="text" name="little_title"/></li><br/>
+	 <ol> 
+	 <input type="submit" value="Save this Quiz"/>
+      </form>
+      </body>
+</html>

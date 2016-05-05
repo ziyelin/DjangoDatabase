@@ -1,0 +1,26 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 25 March 2009), see www.w3.org" />
+
+  <title>Front Page</title>
+  <meta charset="UTF-8" />
+</head>
+
+<body>
+  <h1>Let's Take a Quiz</h1>
+
+  <form action="question_1.php" method="post">
+    First name:<br />
+    <input type="text" name="firstname" /><br />
+    <br />
+    Last name:<br />
+    <input type="integer" name="lastname" /><br />
+    <br />
+    User password:<br />
+    <input type="password" name="password" /><br />
+    <br />
+    <input type="submit" name="submit" /><br />
+  </form>
+</body>
+</html>

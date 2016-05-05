@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{{question.orderinquiz}}. {{question.text}} </h1>
+
+<form action="/quizzes/coolattempt_id/{{attempt_id}}/coolquiz_id/{{quiz_id}}/" method="post">
+ {% csrf_token %}
+<ol>
+        {% for answer in answerset %}
+        
+        <li><input type="checkbox" name="answer" value={{answer.id}}>{{answer.text}}</li>
+        {% endfor %}
+
+</ol>
+<input type="hidden" name="question_id" value = {{question.id}}>
+<input type="submit" value="Save Answer and back to question list">
+</form>
+
+
+{% endblock %}
+
+
+

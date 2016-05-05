@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base href="http://zlin.master.cs.haverford.edu" />
+    <title>Create a Question </title>
+    <link href="/static/styling.css" rel="stylesheet", type="text/css" />
+  </head>
+    <body>
+      <h1> Create a Question</h1>
+      <form action="/question_create/" method="POST">
+	{% csrf_token %}
+	<ol>
+	  <li><label for= "quiz_id">Quiz it belongs to:</label><input type="integer" name="quiz_id"/></li>
+	  <li><label for= "orderinquiz"> Order in the Quiz:</label><input type="integer" name="orderinquiz"></li>
+	  <li><label for= "questiontext">Question Text: </label><input type="text" name="questiontext"></li>
+	    
+	</ol>
+	<input type="submit" value="Save this question">
+    </body>
+</html>

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Your total score for the quiz is: {{score}}</h1>
+
+<a  href="/end_journey/$">Exit</a>
+
+{% endblock %}

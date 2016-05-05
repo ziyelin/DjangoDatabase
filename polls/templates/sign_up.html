@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1> Join Us And Be A Member</h1>
+<form action="/StartJourney/" method="POST">
+        {% csrf_token %}
+        <ol>
+          <li><label for= "username">User Name:</label><input type="text" name="username"/></li>
+
+          <li><label for= "password">Password : </label><input type="password" name="password"></li>
+
+	  <li><label for= "email">Email : </label><input type="text" name="email"></li>
+        
+	  <li><label for= "first_name">First Name : </label><input type="text" name="first_name"></li>
+	
+	  <li><label for= "last_name">Last Name : </label><input type="text" name="last_name"></li>
+	</ol>
+        <input type="submit" value="Sign Up">
+
+
+{% endblock %}

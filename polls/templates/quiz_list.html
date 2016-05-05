@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% load staticfiles %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}" />
+
+
+
+
+
+
+<h1>A list of all Quizzes Available</h1>
+
+<ol>
+	{% for quiz in quizzes %}
+	<li><a href="/quizzes/coolattempt_id/{{attempt_id}}/coolquiz_id/{{quiz.id}}/">Quiz {{quiz.title}}</a></li>
+	{% endfor %}
+</ol>
+
+
+{% endblock %}

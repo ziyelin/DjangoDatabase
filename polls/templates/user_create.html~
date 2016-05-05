@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Welcome New User!</h1>
+<form action="/quizzes/new_user/" method="POST">
+        {% csrf_token %}
+        <ol>
+          <li><label for= "user_name">User Name:</label><input type="int\
+eger" name="quiz_id"/></li>
+          <li><label for= "email"> Email Address :</label><input type=\
+"integer" name="orderinquiz"></li>
+          <li><label for= "password">Password : </label><input type="te\
+xt" name="questiontext"></li>
+
+        </ol>
+        <input type="submit" value="Create New User">
+
+
+
+{% endblock %}

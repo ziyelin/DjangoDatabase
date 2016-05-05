@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>A list of all the questions of Quiz {{quiz_id}} </h1>
+
+<ol>
+	{% for question in questions %}
+	<li><a href="/quizzes/coolattempt_id/{{attempt_id}}/coolquiz_id/{{quiz_id}}/coolquestion_id/{{question.id}}/">Question{{question.orderinquiz}}</a></li>
+	{% endfor %}
+</ol>
+<form action="/quizzes/coolattempt_id/{{attempt_id}}/total_score/" method="post">{% csrf_token %}
+<input type="hidden" name="attempt_id" value={{attempt_id}}>
+<input type="submit" value="Get Your Total Score!">
+</form>
+{% endblock %}

@@ -1,0 +1,30 @@
+from django.conf.urls import include, url
+from django.views.generic import TemplateView
+from django.contrib import admin
+from polls import views
+
+urlpatterns = [
+    #url(r'',TemplateView.as_view(template_name= 'user_login.html'),name="initial login"),
+    url(r'^$',TemplateView.as_view(template_name= 'homepage.html'),name="another initial login"),
+    url(r'^admin/',include(admin.site.urls)),
+
+    url(r'^quizzes/signup/$',views.sign_up, name="sign_up_page"),
+    url(r'^StartJourney/',views.start_journey,name="start_journey"),
+    url(r'^new_user/$',TemplateView.as_view(template_name="user_create.html")),
+
+    url(r'^login/$',TemplateView.as_view(template_name= 'user_login.html'),name="login"), 
+
+  
+    url(r'^quizzes/log_in/$', views.quiz_list, name="login_quiz_list"),
+   # url(r'^quizzes/coolusername/(?P<user_name>[a-zA-Z0-9]+)/$', views.quiz_list, name="quiz_list"),
+
+    url(r'^quizzes/coolattempt_id/(?P<attempt_id>[a-zA-Z0-9]+)/coolquiz_id/(?P<quiz_id>\d+)/$',views.quiz_question_list, name="quiz_question_list"),
+   
+     url(r'^quizzes/coolattempt_id/(?P<attempt_id>[0-9]+)/coolquiz_id/(?P<quiz_id>[0-9]+)/coolquestion_id/(?P<question_id>[0-9]+)/$',views.question_answer_list, name="question_answer_list"),
+    
+     url(r'^quizzes/coolattempt_id/(?P<attempt_id>[0-9]+)/total_score/$', views.show_quiz_score, name="total_score"),
+   
+    url(r'^end_journey/$',views.end_journey,name="end_journey"),
+ 
+]
+

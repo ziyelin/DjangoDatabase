@@ -1,0 +1,308 @@
+from django.test import TestCase
+
+from models import Quiz, Question, Attempt, AnswerAttempt, Answer
+from forms import UserForm
+from datetime import timedelta, datetime
+
+
+from views import validate_id_list, invalid_post, valid_quiz_id, same_question,hacker_detected, hacker_detected1, hacker_detected2, valid_quiz,test_attempt_finish, questiontoquiz,time_too_long,update_last_modified, is_answerset_empty, is_timestamp_updated,TIMETHRESHOLD, one_question_score, question_answer_list
+
+from django.template import loader, RequestContext
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, get_list_or_404
+from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.models import User
+from django.contrib.auth import login, authenticate,logout
+from django.contrib.auth.forms import UserCreationForm
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password
+
+from django.test import Client
+from test_models import AnswerTestCase
+
+from views import TIMETHRESHOLD
+
+class AdminTestCase(TestCase):
+
+    """ Test all the admin functions """
+
+    def setUp(self):
+	""" Create a user named aqua. """
+        self.pwd = make_password('12345678')
+        new_user = User.objects.create_user(
+            username='aqua',
+            password = '12345678',
+            email = "aqua@gmail.com"
+        )
+        new_user.save()
+
+    def testLogIn(self):
+	""" Test function views.quiz_list.
+	
+	When a user properly logs in, function quiz_list is called.	
+	"""
+	
+        c = Client()
+
+        # case where the user is authenticated and active
+        response = c.post(
+            '/quizzes/log_in/?user_name="aqua"',
+            {'user_name':'aqua','password':'12345678'}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['title'],'Quizes List')
+
+        # case where the user is not authenticated
+        
+        myuser = User.objects.get(username = 'aqua')
+        response = c.post(
+            '/quizzes/log_in/?user_name="aqua"',
+            {'user_name':'aqua','password':'1234567'}
+        )
+        self.assertEqual(response.context['user_name'],'aqua')
+        myattempt = Attempt.objects.get(id=1)
+        
+    
+    def testSignUp(self):
+        """ Test function views.quiz_list.
+	
+	When a user properly logs in, function quiz_list is called.	
+	"""
+	
+        
+        c = Client()
+        mydata={'username':'sargius',
+                'password':'12345678',
+                'email':'sargius@gmail.com',
+                'first_name': 'Sargius',
+                'last_name': 'Rwando'}
+
+	# a new user with valid user name and passowrd
+	# a new user should be created
+        response = c.post(
+            '/StartJourney/',
+            data=mydata
+        )
+        self.assertRedirects(response,'/login/',status_code=302)
+
+        # a new user with duplicate user name
+        c = Client()
+        response = c.post(
+            '/StartJourney/',
+             data = mydata
+            )
+        self.assertContains(response,'Incorrect',status_code=200)
+    
+    def testLogOut(self):
+        c = Client()
+        c.login(username='aqua',password='12345678')
+        response = c.get('/end_journey/')
+        self.assertRedirects(response,'/login/',status_code=302)
+
+class AnswerEventsTestCase(AnswerTestCase):
+    def setUp(self):
+
+        super(AnswerEventsTestCase,self).setUp()
+        self.c = Client()
+
+    def testNaive(self):
+        self.assertEqual(1,1)
+
+    def testQuizList(self):
+        myuser = User.objects.get(username = 'aqua')
+        self.assertEqual(myuser.username,'aqua' )
+        c = Client()
+        c.login(username='aqua',password='12345678')
+
+        #case get with a login user
+        response = c.get('/quizzes/log_in/',{'user_name':'aqua'})
+        self.assertEqual(len(response.context['quizzes']),2)
+
+        #case post with correct info
+        response = c.post('/quizzes/log_in/',
+                          {'user_name':'aqua','password':'12345678'})
+        self.assertEqual(len(response.context['quizzes']),2)
+
+        # case post but inccorect password
+        response = c.post('/quizzes/log_in/',
+                          {'user_name':'aqua','password':'123456*'})
+        self.assertEqual(response.context['user_name'],'aqua')
+
+        # case get with a user not login
+        c.logout()
+        response = c.get('/quizzes/log_in/',{'user_name':'aqua'})
+        self.assertContains(response,'Hacker')
+    
+    def testQuizQuestionList(self):
+        
+        c = Client()
+        c.login(username='aqua',password='12345678')
+        myattempt = Attempt.objects.get(id=1)
+        self.assertEqual(myattempt.quiz,None)
+        
+        # case no such attempt
+        response = c.get('/quizzes/coolattempt_id/100/coolquiz_id/1/',
+                         {'attempt_id':100,'quiz_id':1})
+        self.assertEquals(response.status_code, 200)
+        self.assertContains(response,'My Dear User',status_code=200)
+
+        # case no such quiz
+        response = c.get('/quizzes/coolattempt_id/100/coolquiz_id/1/',
+                         {'attempt_id':1,'quiz_id':10})
+        self.assertEquals(response.status_code, 200)
+        self.assertContains(response,'My Dear User',status_code=200)
+
+        # case get correct quiz and attempt
+        response = c.get('/quizzes/coolattempt_id/1/coolquiz_id/1/',
+                         {'attempt_id':1,'quiz_id':1})
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(len(response.context['questions']),4)
+        
+        # case get time too long
+        myattempt = Attempt.objects.get(id = 1)
+        myattempt.last_modified = timezone.now()-timedelta(hours = 100)
+        myattempt.save()
+        response = c.get('/quizzes/coolattempt_id/1/coolquiz_id/1/',
+                         {'attempt_id':1,'quiz_id':1})
+        self.assertContains(response,'My Dear User',status_code=200)
+
+        # case get : finish status = 1                                                
+        myattempt = Attempt.objects.get(id = 1)
+        myattempt.last_modified = timezone.now()
+        myattempt.finish_status = 1
+        myattempt.save()
+        response = c.get('/quizzes/coolattempt_id/1/coolquiz_id/1/',
+                         {'attempt_id':1,'quiz_id':1})
+        self.assertContains(response,'My Dear User',status_code=200)
+
+        # case post : a valid post (first restore answer)
+        myattempt= Attempt.objects.get(id = 1)
+        myattempt.last_modified = timezone.now()
+        myattempt.finish_status = 0
+        myattempt.save()
+    
+        response = c.post(
+            '/quizzes/coolattempt_id/1/coolquiz_id/1/?attempt_id=1&quiz_id=1',
+             {'question_id':1, 'answer':[1,2]}
+            )
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.context['quiz_id'],1)
+
+         # case post : an invalid post with answer of different questions
+        myanswer1 = Answer.objects.get(id=1)
+        myanswer2 = Answer.objects.get(id = 7)
+        self.assertEqual(myanswer1.question.text, 'What are mammels')
+        self.assertEqual(myanswer2.question.text, 'Who is a philosopher')
+        response = c.post(
+            '/quizzes/coolattempt_id/1/coolquiz_id/1/?attempt_id=1&quiz_id=1',
+             {'question_id':1, 'answer':[1,7]}
+            )
+        self.assertContains(response,'Invalid Input',status_code=200)
+        
+    def testQuestionAnswerList(self):
+
+        # test if question_answer_list could be properly rendered
+        c = Client()
+        c.login(username='aqua',password='12345678')
+        myattempt = Attempt.objects.get(id=1)
+        boo1 = time_too_long(myattempt.id)
+        self.assertEqual(boo1, False)
+        myquestion = Question.objects.get(id=1)
+        answer_set = myquestion.answer_set.all()
+        self.assertEqual(len(answer_set),4)
+
+        response = c.get(
+            '/quizzes/coolattempt_id/1/coolquiz_id/1/coolquestion_id/1/',
+            {'attempt_id':1, 'quiz_id':1, 'question_id':1}
+        )
+
+        self.assertEquals(int(response.context['attempt_id']),1)
+        self.assertEquals(len(response.context['answerset']), 4)
+        
+        # test if time_too long will affect the rendering of the question list
+        myattempt = Attempt.objects.get(id=1)
+        myattempt.last_modified = timezone.now() - timedelta(hours=10)
+        myattempt.save()
+        boo1 = time_too_long(myattempt.id)
+        self.assertEqual(boo1, True)
+        response = c.get(
+            '/quizzes/coolattempt_id/1/coolquiz_id/1/',
+            {'attempt_id':1, 'quiz_id':1, 'question_id':1}
+        )
+        self.assertContains(response,'My Dear User',status_code = 200)      
+
+
+class ScoreEventsTestCase(AnswerTestCase):
+    def setUp(self):
+        super(ScoreEventsTestCase,self).setUp()
+        self.c = Client()    
+
+    def testShowTotalScore(self):
+        # add more answer_attempt instances
+	answer1 = Answer.objects.get(text = "Alex")
+	answer2 = Answer.objects.get(text = "Kant")
+	myattempt = Attempt.objects.get(id = 1)
+	AnswerAttempt.objects.create( answer = answer1, attempt = myattempt)
+	myattempt.answer.add(answer1)
+	AnswerAttempt.objects.create( answer = answer2, attempt = myattempt)
+	myattempt.answer.add(answer2)
+
+	# confirm the total score of the first question is 0.5
+	score = one_question_score(attempt_id = 1, question_id = 2)
+	self.assertEqual(score ,0.5)
+
+	# add more answer_attempt instances
+	self.help_create_new_answerattempt()
+	# confirm the total score of the first question is 2
+        score = one_question_score(attempt_id=1, question_id=1)
+        self.assertEqual(score, 2)
+	
+	# confirm the attempt is for user 'aqua'
+	self.assertEqual(myattempt.user.username, 'aqua')
+
+        #test if attempt does not exists
+        c = Client()
+        c.login(username = 'aqua', password= '12345678')
+        response = c.post('/quizzes/coolattempt_id/100/total_score/?attempt_id=100',
+                          {'attempt_id':100})
+        self.assertContains(response,'My Dear User', status_code = 200)
+    
+	# test the total score for the first attempt is 2.5
+	c = Client()
+        c.login(username='aqua',password='12345678')
+	myattempt.finish_status = 0
+        myattempt.save()
+        response = c.post('/quizzes/coolattempt_id/1/total_score/?attempt_id=1',
+                          {'attempt_id':1})
+	self.assertEqual(response.context['score'], 2.5)
+        myattempt = Attempt.objects.get(id = 1)
+        self.assertEqual(myattempt.finish_status, 1)
+
+        # test the total score when method is get 
+        # should still be 2.5 no matter how many other answers are given
+        answer3 = Answer.objects.get(text = "Leibniz")
+        AnswerAttempt.objects.create( answer = answer3, attempt = myattempt)
+        myattempt.answer.add(answer3)
+        self.assertEqual(answer3.score,1)
+        
+        myattempt.finish_status = 0
+        myattempt.save()
+        c = Client()
+        c.login(username='aqua',password='12345678')
+        response = c.get('/quizzes/coolattempt_id/1/total_score/',
+                          {'attempt_id':1})
+        self.assertEqual(response.context['score'], 2.5)
+
+        # test the total score when method is post
+        # should still be 2.5+1*0.5=3  when the finish_status is adjusted back to 0
+        myattempt = Attempt.objects.get(id=1)
+        myattempt.finish_status = 0
+        myattempt.save()
+        c = Client()
+        c.login(username='aqua',password='12345678')
+        response = c.post('/quizzes/coolattempt_id/1/total_score/?attempt_id=1',
+                          {'attempt_id':1})
+        self.assertEqual(response.context['score'], 3)
